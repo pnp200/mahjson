@@ -1,2 +1,2 @@
 # mahjson
-GHLMahJson Go SDK
+GHL MahJson Go SDK
