@@ -1,4 +1,4 @@
-github.com/pnp200/mahjson
+module github.com/pnp200/mahjson
 
 go 1.14
 
