@@ -17,21 +17,19 @@ This will retrieve the library.
 package main
 
 import (
-  "fmt"
-  "time"
-  "github.com/pnp200/mahjson"
-  "github.com/tidwall/gjson"
+	"fmt"
+	"github.com/pnp200/mahjson"
 )
 
 func main() {
-	url := "your test url"
-	publicKey := "your assigned public key"
-	privateKey := "your private key"
+	url := "https://sandbox.ghlapps.com/sandbox/json/services/jsontest"
+	publicKey := "server_ca.pem"
+	privateKey := "client.pem"
 
 	// Online PIN
 	pin, err := mahjson.NewClient(url, publicKey, privateKey)
 	if err != nil {
-		t.Error(err)
+		fmt.Println(err.Error())
 		return
 	}
 	pin.Amount = 5.00
