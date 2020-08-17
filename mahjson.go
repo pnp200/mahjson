@@ -23,9 +23,16 @@ import (
 	"time"
 )
 
-type API struct {
-	security    string
-	version     string
+const (
+	Security = "0"
+	Version  = "1"
+)
+
+type Client struct {
+	url         string
+	privateKey  *rsa.PrivateKey
+	publicKey   *rsa.PublicKey
+
 	msgType     string
 	txnType     string
 	Amount      float64
@@ -37,57 +44,53 @@ type API struct {
 	AccountNo   string
 	posDateTime string
 	TxnTraceID  int
-	url         string
-	privateKey  *rsa.PrivateKey
-	publicKey   *rsa.PublicKey
 }
 
-func (this *API) Init() error {
-	this.security = "0"
-	this.version = "1"
-	this.url = "https://sandbox.ghlapps.com/sandbox/json/services/jsontest"
-	publicKey, err := getPublicKey("server_ca.pem")
+// init client
+func NewClient(url string, publicKeyFile string, privateKeyFile string) (client *Client, err error) {
+	publicKey, err := getPublicKey(publicKeyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	privateKey, err := getPrivateKey("client.pem")
+	privateKey, err := getPrivateKey(privateKeyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	client = &Client{}
+	client.url = url
+	client.publicKey = publicKey
+	client.privateKey = privateKey
 
-	this.publicKey = publicKey
-	this.privateKey = privateKey
-
-	return nil
+	return client, nil
 }
 
-func (this *API) setMsgType(msgType string) {
+func (this *Client) setMsgType(msgType string) {
 	this.msgType = msgType
 }
 
-func (this *API) setTxnType(txnType string) {
+func (this *Client) setTxnType(txnType string) {
 	this.txnType = txnType
 }
 
-func (this *API) unsetAccountNo() {
+func (this *Client) unsetAccountNo() {
 	this.AccountNo = ""
 }
 
-func (this *API) unsetProductCode() {
+func (this *Client) unsetProductCode() {
 	this.ProductCode = ""
 }
 
-func (this *API) setRetTxnRef() {
+func (this *Client) setRetTxnRef() {
 	this.retTxnRef = strings.Replace(uuid.NewV4().String(), "-", "", -1)
 }
 
-func (this *API) setPosDateTime() {
+func (this *Client) setPosDateTime() {
 	this.posDateTime = time.Now().Format("20060102150405")
 }
 
-func (this *API) getPayload() string {
-	return this.security +
-		this.version +
+func (this *Client) getPayload() string {
+	return Security +
+		Version +
 		this.msgType +
 		this.txnType +
 		strconv.Itoa(this.TxnTraceID) +
@@ -126,7 +129,7 @@ func getPrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func (this *API) sign(payload string) (string, error) {
+func (this *Client) sign(payload string) (string, error) {
 	rng := rand.Reader
 	header := []byte(`{"typ":"JWT","alg":"RS256"}`)
 	securedInput := []byte(compact.Serialize(header, []byte(payload)))
@@ -138,7 +141,7 @@ func (this *API) sign(payload string) (string, error) {
 	return compact.Serialize(signature), nil
 }
 
-func (this *API) verify(response string) (string, error) {
+func (this *Client) verify(response string) (string, error) {
 	if !gjson.Valid(response) || !gjson.Get(response, "security").Exists() || !gjson.Get(response, "version").Exists() ||
 		!gjson.Get(response, "msg").Exists() || !gjson.Get(response, "signature").Exists() {
 		return "", errors.New(response)
@@ -219,11 +222,7 @@ func postJsonTimeout(url string, jsonData string) (string, error) {
 	return string(body), nil
 }
 
-func (this *API) NetworkCheck() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) NetworkCheck() (string, error) {
 	this.setMsgType("NetworkCheck")
 	this.setPosDateTime()
 	sign, err := this.sign(this.getPayload())
@@ -231,8 +230,8 @@ func (this *API) NetworkCheck() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]string{
 			"MsgType":     this.msgType,
 			"POSDateTime": this.posDateTime,
@@ -248,11 +247,7 @@ func (this *API) NetworkCheck() (string, error) {
 	return postJson(this.url, string(jsonData))
 }
 
-func (this *API) OnlinePIN() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) OnlinePIN() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PIN")
 	this.unsetAccountNo()
@@ -263,8 +258,8 @@ func (this *API) OnlinePIN() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -300,11 +295,7 @@ func (this *API) OnlinePIN() (string, error) {
 	return result, nil
 }
 
-func (this *API) onlinePINReversal() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) onlinePINReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("PIN")
 	this.unsetAccountNo()
@@ -314,8 +305,8 @@ func (this *API) onlinePINReversal() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -347,11 +338,7 @@ func (this *API) onlinePINReversal() (string, error) {
 	return result, nil
 }
 
-func (this *API) OnlinePINVoid(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) OnlinePINVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("PIN")
 	this.unsetAccountNo()
@@ -362,8 +349,8 @@ func (this *API) OnlinePINVoid(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -396,11 +383,7 @@ func (this *API) OnlinePINVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) Etopup() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) Etopup() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("ETU")
 	this.setRetTxnRef()
@@ -410,8 +393,8 @@ func (this *API) Etopup() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -449,11 +432,7 @@ func (this *API) Etopup() (string, error) {
 	return result, nil
 }
 
-func (this *API) etopupReversal() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) etopupReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("ETU")
 	this.setPosDateTime()
@@ -462,8 +441,8 @@ func (this *API) etopupReversal() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -496,11 +475,7 @@ func (this *API) etopupReversal() (string, error) {
 	return result, nil
 }
 
-func (this *API) EtopupVoid(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) EtopupVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("ETU")
 	this.setRetTxnRef()
@@ -511,8 +486,8 @@ func (this *API) EtopupVoid(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -545,11 +520,7 @@ func (this *API) EtopupVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) EtopupTxnUpload(uploadData string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) EtopupTxnUpload(uploadData string) (string, error) {
 	this.setMsgType("TxnUpload")
 	this.setTxnType("ETU")
 	this.setRetTxnRef()
@@ -560,8 +531,8 @@ func (this *API) EtopupTxnUpload(uploadData string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":      this.msgType,
 			"TxnType":      this.txnType,
@@ -594,11 +565,7 @@ func (this *API) EtopupTxnUpload(uploadData string) (string, error) {
 	return result, nil
 }
 
-func (this *API) Payment() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) Payment() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -608,8 +575,8 @@ func (this *API) Payment() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -646,11 +613,7 @@ func (this *API) Payment() (string, error) {
 	return result, nil
 }
 
-func (this *API) paymentReversal() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) paymentReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("PMT")
 	this.setPosDateTime()
@@ -659,8 +622,8 @@ func (this *API) paymentReversal() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -693,11 +656,7 @@ func (this *API) paymentReversal() (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentVoid(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -708,8 +667,8 @@ func (this *API) PaymentVoid(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -742,11 +701,7 @@ func (this *API) PaymentVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentRefund(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentRefund(orgTxnRef string) (string, error) {
 	this.setMsgType("Refund")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -757,8 +712,8 @@ func (this *API) PaymentRefund(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -791,11 +746,7 @@ func (this *API) PaymentRefund(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentSeamless() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentSeamless() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -806,8 +757,8 @@ func (this *API) PaymentSeamless() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -843,11 +794,7 @@ func (this *API) PaymentSeamless() (string, error) {
 	return result, nil
 }
 
-func (this *API) paymentSeamlessReversal() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) paymentSeamlessReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("PMT")
 	this.setPosDateTime()
@@ -856,8 +803,8 @@ func (this *API) paymentSeamlessReversal() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -889,11 +836,7 @@ func (this *API) paymentSeamlessReversal() (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentSeamlessVoid(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentSeamlessVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -903,8 +846,8 @@ func (this *API) PaymentSeamlessVoid(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -937,11 +880,7 @@ func (this *API) PaymentSeamlessVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentSeamlessRefund(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentSeamlessRefund(orgTxnRef string) (string, error) {
 	this.setMsgType("Refund")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -951,8 +890,8 @@ func (this *API) PaymentSeamlessRefund(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -985,11 +924,7 @@ func (this *API) PaymentSeamlessRefund(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentAsynchronous() (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentAsynchronous() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -999,8 +934,8 @@ func (this *API) PaymentAsynchronous() (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -1032,11 +967,7 @@ func (this *API) PaymentAsynchronous() (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentQuery(orgTxnRef string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentQuery(orgTxnRef string) (string, error) {
 	this.setMsgType("Query")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -1047,8 +978,8 @@ func (this *API) PaymentQuery(orgTxnRef string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":     this.msgType,
 			"TxnType":     this.txnType,
@@ -1081,11 +1012,7 @@ func (this *API) PaymentQuery(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
-func (this *API) PaymentTxnUpload(uploadData string) (string, error) {
-	err := this.Init()
-	if err != nil {
-		return "", err
-	}
+func (this *Client) PaymentTxnUpload(uploadData string) (string, error) {
 	this.setMsgType("TxnUpload")
 	this.setTxnType("PMT")
 	this.setRetTxnRef()
@@ -1096,8 +1023,8 @@ func (this *API) PaymentTxnUpload(uploadData string) (string, error) {
 		return "", err
 	}
 	data := map[string]interface{}{
-		"security": this.security,
-		"version":  this.version,
+		"security": Security,
+		"version":  Version,
 		"msg": map[string]interface{}{
 			"MsgType":      this.msgType,
 			"TxnType":      this.txnType,
