@@ -194,34 +194,6 @@ func postJson(url string, jsonData string) (string, error) {
 	return string(body), nil
 }
 
-func postJsonTimeout(url string, jsonData string) (string, error) {
-	fmt.Println(jsonData)
-	jsonStr := []byte(jsonData)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		DialContext: (&net.Dialer{
-			Timeout: 500 * time.Millisecond,
-		}).DialContext,
-	}
-	client := &http.Client{Transport: transport}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
-}
-
 func (this *Client) NetworkCheck() (string, error) {
 	this.setMsgType("NetworkCheck")
 	this.setPosDateTime()
