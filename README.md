@@ -1,8 +1,4 @@
-# mahjson
-GHL MahJson Go SDK
-
-Getting Started
-===============
+# GHL MahJson SDK for Go language
 
 ## Installing
 
