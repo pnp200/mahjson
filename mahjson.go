@@ -171,7 +171,6 @@ func (this *Client) verify(response string) (string, error) {
 }
 
 func postJson(url string, jsonData string) (string, error) {
-	fmt.Println(jsonData)
 	jsonStr := []byte(jsonData)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	if err != nil {
