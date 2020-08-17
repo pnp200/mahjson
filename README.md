@@ -38,6 +38,7 @@ func main() {
 		fmt.Println(err.Error())
 	}
 	fmt.Println(netCheck)
+}
 ```
 
 ## Documentation
