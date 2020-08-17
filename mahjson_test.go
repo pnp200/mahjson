@@ -1,33 +1,33 @@
-package main
+package mahjson_test
 
 import (
 	"github.com/pnp200/mahjson"
-	"fmt"
 	"github.com/tidwall/gjson"
+	"testing"
 	"time"
 )
 
-func main() {
+func TestMahJson(t *testing.T) {
 	url := "your test url"
 	publicKey := "your assigned public key"
 	privateKey := "your private key"
 
 	net, err := mahjson.NewClient(url, publicKey, privateKey)
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 		return
 	}
 	// Network Check
 	netCheck, err := net.NetworkCheck()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(netCheck)
+	t.Log(netCheck)
 
 	// Online PIN
 	pin, err := mahjson.NewClient(url, publicKey, privateKey)
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 		return
 	}
 	pin.Amount = 5.00
@@ -38,20 +38,20 @@ func main() {
 	pin.TxnTraceID = 118205
 	pinResponse, err := pin.OnlinePIN()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(pinResponse)
+	t.Log(pinResponse)
 	time.Sleep(time.Second) // don't do void immediately after sale
 	pinVoidResponse, err := pin.OnlinePINVoid(gjson.Get(pinResponse, "msg.TxnRef").String())
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(pinVoidResponse)
+	t.Log(pinVoidResponse)
 
 	// E-Topup
 	etu, err := mahjson.NewClient(url, publicKey, privateKey)
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 		return
 	}
 	etu.Amount = 10.00
@@ -63,27 +63,27 @@ func main() {
 	etu.TxnTraceID = 118205
 	etuResponse, err := etu.Etopup()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(etuResponse)
+	t.Log(etuResponse)
 	time.Sleep(time.Second) // don't do void immediately after sale
 	etuVoidResponse, err := etu.EtopupVoid(gjson.Get(etuResponse, "msg.TxnRef").String())
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(etuVoidResponse)
+	t.Log(etuVoidResponse)
 	// TxnUpload
 	etu.ProductCode = "TNGRELOAD"
 	etuUpload, err := etu.EtopupTxnUpload("123")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(etuUpload)
+	t.Log(etuUpload)
 
 	// Payment
 	pmt, err := mahjson.NewClient(url, publicKey, privateKey)
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 		return
 	}
 	pmt.Amount = 20.00
@@ -95,42 +95,42 @@ func main() {
 	pmt.TxnTraceID = 118205
 	pmtResponse, err := pmt.Payment()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(pmtResponse)
+	t.Log(pmtResponse)
 	time.Sleep(time.Second) // don't do void immediately after sale
 	pmtVoidResponse, err := pmt.PaymentVoid(gjson.Get(pmtResponse, "msg.TxnRef").String())
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(pmtVoidResponse)
+	t.Log(pmtVoidResponse)
 	// Seamless Payment
 	pmt.Amount = 30.00
 	pmt.AccountNo = "800123456789055555"
 	seamless, err := pmt.PaymentSeamless()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(seamless)
+	t.Log(seamless)
 	time.Sleep(time.Second) // don't do void immediately after sale
 	seamlessVoid, err := pmt.PaymentSeamlessVoid(gjson.Get(seamless, "msg.TxnRef").String())
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(seamlessVoid)
+	t.Log(seamlessVoid)
 	// Asynchronous Payment
 	pmt.Amount = 40.00
 	pmt.ProductCode = "BOOSTDQR"
 	asynchronous, err := pmt.PaymentAsynchronous()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(asynchronous)
+	t.Log(asynchronous)
 	// TxnUpload
 	pmt.ProductCode = "TNGPAYMENT"
 	pmtUpload, err := pmt.PaymentTxnUpload("123")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Error(err)
 	}
-	fmt.Println(pmtUpload)
+	t.Log(pmtUpload)
 }

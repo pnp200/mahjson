@@ -1,3 +1,5 @@
+// copyright © 2020 GHL SYSTEMS BERHAD
+// Package mahjson provides implementation of e-pay POS to Host JSON web services.
 package mahjson
 
 import (
@@ -29,9 +31,9 @@ const (
 )
 
 type Client struct {
-	url         string
-	privateKey  *rsa.PrivateKey
-	publicKey   *rsa.PublicKey
+	url        string
+	privateKey *rsa.PrivateKey
+	publicKey  *rsa.PublicKey
 
 	msgType     string
 	txnType     string
@@ -46,7 +48,6 @@ type Client struct {
 	TxnTraceID  int
 }
 
-// init client
 func NewClient(url string, publicKeyFile string, privateKeyFile string) (client *Client, err error) {
 	publicKey, err := getPublicKey(publicKeyFile)
 	if err != nil {
@@ -113,6 +114,7 @@ func getPublicKey(keyPath string) (*rsa.PublicKey, error) {
 	if err != nil {
 		return nil, errors.New("invalid public key format")
 	}
+
 	return publicKey, nil
 }
 
@@ -126,6 +128,7 @@ func getPrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 	if err != nil {
 		return nil, errors.New("invalid private key format")
 	}
+
 	return privateKey, nil
 }
 
@@ -138,6 +141,7 @@ func (this *Client) sign(payload string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return compact.Serialize(signature), nil
 }
 
@@ -194,6 +198,8 @@ func postJson(url string, jsonData string) (string, error) {
 	return string(body), nil
 }
 
+// Network Check is a service to check the availability of the web service.
+// see https://sandbox.ghlapps.com/apidoc/#api-Network for more details.
 func (this *Client) NetworkCheck() (string, error) {
 	this.setMsgType("NetworkCheck")
 	this.setPosDateTime()
@@ -219,6 +225,8 @@ func (this *Client) NetworkCheck() (string, error) {
 	return postJson(this.url, string(jsonData))
 }
 
+// Online PIN a service that provides prepaid PIN topup reload requested by retailer.
+// see https://sandbox.ghlapps.com/apidoc/#api-PIN-onlinePIN for more details.
 func (this *Client) OnlinePIN() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PIN")
@@ -251,7 +259,7 @@ func (this *Client) OnlinePIN() (string, error) {
 		},
 	}
 	jsonData, _ := json.Marshal(data)
-	response, err := postJsonTimeout(this.url, string(jsonData))
+	response, err := postJson(this.url, string(jsonData))
 	if err != nil {
 		if strings.Contains(err.Error(), "timeout") {
 			response, err = this.onlinePINReversal()
@@ -264,9 +272,12 @@ func (this *Client) OnlinePIN() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return result, nil
 }
 
+// Online PIN Reversal is a service to reverse a PIN/PIN Void request.
+// see https://sandbox.ghlapps.com/apidoc/#api-PIN-onlinePINReversal for more details.
 func (this *Client) onlinePINReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("PIN")
@@ -310,6 +321,8 @@ func (this *Client) onlinePINReversal() (string, error) {
 	return result, nil
 }
 
+// Online PIN Void is a service to void a PIN request.
+// see https://sandbox.ghlapps.com/apidoc/#api-PIN-onlinePINVoid for more details.
 func (this *Client) OnlinePINVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("PIN")
@@ -355,6 +368,8 @@ func (this *Client) OnlinePINVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// E-Topup is a service that provides prepaid PINless topup reload requested by retailer.
+// see https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopup for more details.
 func (this *Client) Etopup() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("ETU")
@@ -404,6 +419,8 @@ func (this *Client) Etopup() (string, error) {
 	return result, nil
 }
 
+// E-Topup Reversal is a service to reverse a E-Topup/E-Etopup Void request.
+// see https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupReversal for more details.
 func (this *Client) etopupReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("ETU")
@@ -447,6 +464,8 @@ func (this *Client) etopupReversal() (string, error) {
 	return result, nil
 }
 
+// E-Topup Void is a service to void a E-Topup request.
+// see https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupVoid for more details.
 func (this *Client) EtopupVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("ETU")
@@ -492,6 +511,8 @@ func (this *Client) EtopupVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// Pinless topup txnupload
+// see https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupTxnUpload for more details.
 func (this *Client) EtopupTxnUpload(uploadData string) (string, error) {
 	this.setMsgType("TxnUpload")
 	this.setTxnType("ETU")
@@ -537,6 +558,8 @@ func (this *Client) EtopupTxnUpload(uploadData string) (string, error) {
 	return result, nil
 }
 
+// Payment is a service that provides payment services to retailer.
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-payment for more details.
 func (this *Client) Payment() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PMT")
@@ -582,9 +605,12 @@ func (this *Client) Payment() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return result, nil
 }
 
+// Payment Reversal is a service to reverse a Payment/Payment Void request.
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-paymentReversal for more details.
 func (this *Client) paymentReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("PMT")
@@ -628,6 +654,8 @@ func (this *Client) paymentReversal() (string, error) {
 	return result, nil
 }
 
+// Payment Void is a service to void a payment request.
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-paymentVoid for more details.
 func (this *Client) PaymentVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("PMT")
@@ -673,6 +701,8 @@ func (this *Client) PaymentVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// Payment Refund is a service to Refund a Payment request.
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-paymentRefund for more details.
 func (this *Client) PaymentRefund(orgTxnRef string) (string, error) {
 	this.setMsgType("Refund")
 	this.setTxnType("PMT")
@@ -718,6 +748,8 @@ func (this *Client) PaymentRefund(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// Seamless Payment
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-seamlessPayment for more details.
 func (this *Client) PaymentSeamless() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PMT")
@@ -763,9 +795,12 @@ func (this *Client) PaymentSeamless() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return result, nil
 }
 
+// Seamless Payment Reversal
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-seamlessReversal for more details.
 func (this *Client) paymentSeamlessReversal() (string, error) {
 	this.setMsgType("Reversal")
 	this.setTxnType("PMT")
@@ -808,6 +843,8 @@ func (this *Client) paymentSeamlessReversal() (string, error) {
 	return result, nil
 }
 
+// Seamless Payment Void
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-seamlessPaymentVoid for more details.
 func (this *Client) PaymentSeamlessVoid(orgTxnRef string) (string, error) {
 	this.setMsgType("Void")
 	this.setTxnType("PMT")
@@ -852,6 +889,8 @@ func (this *Client) PaymentSeamlessVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// Seamless Payment Refund
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-seamlessPaymentRefund for more details.
 func (this *Client) PaymentSeamlessRefund(orgTxnRef string) (string, error) {
 	this.setMsgType("Refund")
 	this.setTxnType("PMT")
@@ -896,6 +935,8 @@ func (this *Client) PaymentSeamlessRefund(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// Asynchronous Payment
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-asynchronousPayment for more details.
 func (this *Client) PaymentAsynchronous() (string, error) {
 	this.setMsgType("Sale")
 	this.setTxnType("PMT")
@@ -936,9 +977,12 @@ func (this *Client) PaymentAsynchronous() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return result, nil
 }
 
+// Payment Query
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-paymentQuery for more details.
 func (this *Client) PaymentQuery(orgTxnRef string) (string, error) {
 	this.setMsgType("Query")
 	this.setTxnType("PMT")
@@ -984,6 +1028,8 @@ func (this *Client) PaymentQuery(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// Payment TxnUpload
+// see https://sandbox.ghlapps.com/apidoc/#api-Payment-paymentTxnupload for more details.
 func (this *Client) PaymentTxnUpload(uploadData string) (string, error) {
 	this.setMsgType("TxnUpload")
 	this.setTxnType("PMT")
