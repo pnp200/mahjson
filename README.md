@@ -22,9 +22,9 @@ import (
 )
 
 func main() {
-	url := "https://sandbox.ghlapps.com/sandbox/json/services/jsontest"
-	publicKey := "server_ca.pem"
-	privateKey := "client.pem"
+	url := "your test url"
+	publicKey := "your assigned public key"
+	privateKey := "your private key"
 
 	// Online PIN
 	pin, err := mahjson.NewClient(url, publicKey, privateKey)
