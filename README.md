@@ -54,6 +54,7 @@ func main() {
 - [Etopup](https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopup)
 - [etopupReversal](https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupReversal)
 - [EtopupVoid](https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupVoid)
+- [EtopupAccountInquiry](https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupAccountInquiry)
 - [EtopupTxnUpload](https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupTxnUpload)
 - [Payment](https://sandbox.ghlapps.com/apidoc/#api-Payment-payment)
 - [paymentReversal](https://sandbox.ghlapps.com/apidoc/#api-Payment-paymentReversal)
