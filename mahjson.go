@@ -510,6 +510,51 @@ func (this *Client) EtopupVoid(orgTxnRef string) (string, error) {
 	return result, nil
 }
 
+// E-Topup Account Inquiry is used to get the account detail.
+// see https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupAccountInquiry for more details.
+func (this *Client) EtopupAccountInquiry() (string, error) {
+	this.setMsgType("Reversal")
+	this.setTxnType("ETU")
+	this.setPosDateTime()
+	sign, err := this.sign(this.getPayload())
+	if err != nil {
+		return "", err
+	}
+	data := map[string]interface{}{
+		"security": Security,
+		"version":  Version,
+		"msg": map[string]interface{}{
+			"MsgType":     this.msgType,
+			"TxnType":     this.txnType,
+			"Amount":      fmt.Sprintf("%.2f", this.Amount),
+			"MerchantID":  this.MerchantID,
+			"OperatorID":  this.OperatorID,
+			"RetTxnRef":   this.retTxnRef,
+			"TerminalID":  this.TerminalID,
+			"ProductCode": this.ProductCode,
+			"AccountNo":   this.AccountNo,
+			"POSDateTime": this.posDateTime,
+			"TxnTraceID":  this.TxnTraceID,
+		},
+		"signature": map[string]string{
+			"type":      "JWT",
+			"value":     sign,
+			"parameter": "{\"typ\":\"JWT\",\"alg\":\"RS256\"}",
+		},
+	}
+	jsonData, _ := json.Marshal(data)
+	response, err := postJson(this.url, string(jsonData))
+	if err != nil {
+		return "", err
+	}
+	result, err := this.verify(response)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
 // Pinless topup txnupload
 // see https://sandbox.ghlapps.com/apidoc/#api-ETopup-etopupTxnUpload for more details.
 func (this *Client) EtopupTxnUpload(uploadData string) (string, error) {
