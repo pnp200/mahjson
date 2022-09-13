@@ -72,6 +72,12 @@ func TestMahJson(t *testing.T) {
 		t.Error(err)
 	}
 	t.Log(etuVoidResponse)
+	// Account Inquiry
+	etuAccountInquiry, err := etu.EtopupAccountInquiry()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(etuAccountInquiry)
 	// TxnUpload
 	etu.ProductCode = "TNGRELOAD"
 	etuUpload, err := etu.EtopupTxnUpload("123")
